@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ResumeAI — Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0B0B0F;
+    --sidebar: #0F172A;
+    --card: #111827;
+    --primary: #7C3AED;
+    --accent: #A78BFA;
+    --text: #E5E7EB;
+    --muted: #6B7280;
+    --border: rgba(255,255,255,0.06);
+    --card-border: rgba(255,255,255,0.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.3); border-radius: 99px; }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    position: fixed; top: 0; left: 0; bottom: 0; width: 240px;
+    display: flex; flex-direction: column;
+    z-index: 40;
+    transition: transform 0.3s ease;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-radius: 10px;
+    font-size: 13.5px; font-weight: 500;
+    color: #6B7280;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-decoration: none;
+    margin: 1px 0;
+  }
+  .nav-item:hover { background: rgba(124,58,237,0.1); color: #A78BFA; }
+  .nav-item.active {
+    background: rgba(124,58,237,0.15);
+    color: #A78BFA;
+    border-left: 2px solid #7C3AED;
+  }
+  .nav-item svg { flex-shrink: 0; opacity: 0.8; }
+  .nav-item.active svg { opacity: 1; }
+
+  /* Top bar */
+  .topbar {
+    position: fixed; top: 0; left: 240px; right: 0; height: 60px;
+    background: rgba(11,11,15,0.92);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(18px);
+    z-index: 30;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { border-color: rgba(124,58,237,0.25); box-shadow: 0 0 0 1px rgba(124,58,237,0.08); }
+
+  /* Gradient button */
+  .btn-primary {
+    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    color: white; font-weight: 600; font-size: 13px;
+    padding: 9px 18px; border-radius: 10px;
+    border: 1px solid rgba(167,139,250,0.2);
+    box-shadow: 0 0 20px rgba(124,58,237,0.2);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 30px rgba(124,58,237,0.35);
+    background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  }
+  .btn-secondary {
+    background: rgba(124,58,237,0.1);
+    color: #A78BFA; font-weight: 500; font-size: 13px;
+    padding: 8px 16px; border-radius: 10px;
+    border: 1px solid rgba(124,58,237,0.25);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-secondary:hover { background: rgba(124,58,237,0.18); border-color: rgba(167,139,250,0.4); }
+
+  /* Progress bar */
+  .progress-track { background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, #7C3AED, #A78BFA);
+    transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  }
+  .progress-fill.green { background: linear-gradient(90deg, #10B981, #34D399); }
+  .progress-fill.red { background: linear-gradient(90deg, #EF4444, #F87171); }
+  .progress-fill.amber { background: linear-gradient(90deg, #F59E0B, #FCD34D); }
+
+  /* Tag */
+  .tag {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 99px;
+    font-size: 11.5px; font-weight: 500;
+    background: rgba(124,58,237,0.14);
+    border: 1px solid rgba(124,58,237,0.25);
+    color: #A78BFA;
+  }
+  .tag.red { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #F87171; }
+  .tag.green { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.25); color: #34D399; }
+  .tag.amber { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); color: #FCD34D; }
+  .tag.blue { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.25); color: #93C5FD; }
+
+  /* Textarea / Input */
+  .field {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 12px 14px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field:focus { border-color: rgba(124,58,237,0.5); background: rgba(124,58,237,0.04); }
+  .field::placeholder { color: #4B5563; }
+
+  /* Section heading */
+  .section-heading {
+    font-size: 17px; font-weight: 700;
+    color: #F3F4F6;
+    letter-spacing: -0.02em;
+  }
+
+  /* Stat big number */
+  .stat-num {
+    font-size: 36px; font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  /* Timeline */
+  .timeline-line {
+    position: absolute; left: 19px; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(180deg, #7C3AED 0%, rgba(124,58,237,0.1) 100%);
+  }
+  .timeline-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #7C3AED;
+    border: 2px solid #A78BFA;
+    box-shadow: 0 0 8px rgba(124,58,237,0.5);
+    flex-shrink: 0;
+  }
+
+  /* Table */
+  .data-table th {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+    color: #6B7280; text-transform: uppercase;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td { padding: 12px 16px; font-size: 13.5px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(124,58,237,0.04); }
+
+  /* Notification dot */
+  .notif-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #7C3AED;
+    box-shadow: 0 0 8px rgba(124,58,237,0.8);
+    position: absolute; top: 2px; right: 2px;
+  }
+
+  /* Search bar */
+  .search-bar {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 7px 14px 7px 38px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    width: 260px;
+    transition: border-color 0.2s, background 0.2s;
+    font-family: 'Inter', sans-serif;
+  }
+  .search-bar:focus { border-color: rgba(124,58,237,0.45); background: rgba(124,58,237,0.05); }
+  .search-bar::placeholder { color: #4B5563; }
+
+  /* Section divider */
+  .divider { height: 1px; background: var(--border); }
+
+  /* Fade in animation */
+  .fade-in { opacity: 0; transform: translateY(14px); animation: fadeUp 0.5s ease forwards; }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 0.05s; }
+  .d2 { animation-delay: 0.12s; }
+  .d3 { animation-delay: 0.19s; }
+  .d4 { animation-delay: 0.26s; }
+  .d5 { animation-delay: 0.33s; }
+  .d6 { animation-delay: 0.4s; }
+
+  /* Loading spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(167,139,250,0.25); border-top-color: #A78BFA; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  .loading .spinner { display: inline-block; }
+  .loading .btn-label { display: none; }
+
+  /* Score ring */
+  .score-ring-bg { fill: none; stroke: rgba(255,255,255,0.07); }
+  .score-ring-fill { fill: none; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1); transform-origin: center; transform: rotate(-90deg); }
+
+  /* Avatar */
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, #7C3AED, #A78BFA);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: white;
+    flex-shrink: 0;
+  }
+
+  /* Suggestion bullet */
+  .suggestion-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 9px 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    font-size: 13px; color: #D1D5DB;
+    transition: background 0.15s;
+  }
+  .suggestion-item:hover { background: rgba(124,58,237,0.08); }
+
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .topbar, .main-wrap { left: 0 !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <!-- Logo -->
+  <div class="px-5 py-5" style="border-bottom: 1px solid var(--border);">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #7C3AED, #5B21B6);">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div style="font-size:15px; font-weight:800; color:#F3F4F6; letter-spacing:-0.02em;">ResumeAI</div>
+        <div style="font-size:10.5px; color:#6B7280; margin-top:-1px;">Pro Plan</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="px-3 py-4 flex-1 overflow-y-auto">
+    <div style="font-size:10.5px; font-weight:600; color:#4B5563; letter-spacing:0.07em; text-transform:uppercase; padding: 0 10px; margin-bottom: 8px;">Main</div>
+    <nav class="flex flex-col gap-0.5">
+      <a class="nav-item active" onclick="showSection('dashboard')">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" onclick="showSection('analyzer')">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Resume Analyzer
+      </a>
+      <a class="nav-item" onclick="showSection('apply')">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        AI Apply Assistant
+      </a>
+      <a class="nav-item" onclick="showSection('tracker')">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Job Tracker
+      </a>
+      <a class="nav-item" onclick="showSection('skills')">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Skill Upgrade
+      </a>
+    </nav>
+    <div style="font-size:10.5px; font-weight:600; color:#4B5563; letter-spacing:0.07em; text-transform:uppercase; padding: 0 10px; margin: 18px 0 8px;">Account</div>
+    <nav class="flex flex-col gap-0.5">
+      <a class="nav-item" onclick="showSection('settings')">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" stroke-width="1.75"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" stroke-width="1.75"/></svg>
+        Settings
+      </a>
+    </nav>
+  </div>
+
+  <!-- User -->
+  <div class="px-4 py-4" style="border-top: 1px solid var(--border);">
+    <div class="flex items-center gap-3">
+      <div class="avatar">AK</div>
+      <div class="flex-1 min-w-0">
+        <div style="font-size:13px; font-weight:600; color:#F3F4F6;">Alex Kumar</div>
+        <div style="font-size:11.5px; color:#6B7280; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">alex@gmail.com</div>
+      </div>
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" style="color:#6B7280; flex-shrink:0;"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════ TOPBAR ═══════════════════════ -->
+<div class="topbar" style="left:240px;">
+  <!-- Mobile menu button (hidden on desktop) -->
+  <button class="md:hidden mr-3 p-1.5 rounded-lg" style="background:rgba(255,255,255,0.06);" onclick="document.getElementById('sidebar').classList.toggle('open')">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+
+  <!-- Search -->
+  <div class="relative flex-1 max-w-xs">
+    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#4B5563;pointer-events:none;">
+      <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <input type="text" placeholder="Search resumes, jobs..." class="search-bar"/>
+  </div>
+
+  <!-- Right controls -->
+  <div class="flex items-center gap-3">
+    <!-- Notification -->
+    <button class="relative p-2 rounded-xl transition-colors" style="background:rgba(255,255,255,0.05); border:1px solid var(--border);" onmouseenter="this.style.background='rgba(124,58,237,0.12)'" onmouseleave="this.style.background='rgba(255,255,255,0.05)'">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="#9CA3AF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="notif-dot"></span>
+    </button>
+    <!-- Theme -->
+    <button class="p-2 rounded-xl transition-colors" style="background:rgba(255,255,255,0.05); border:1px solid var(--border);" onmouseenter="this.style.background='rgba(124,58,237,0.12)'" onmouseleave="this.style.background='rgba(255,255,255,0.05)'">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke="#9CA3AF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <!-- Avatar -->
+    <div class="avatar" style="cursor:pointer;">AK</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ MAIN ═══════════════════════ -->
+<main class="main-wrap" style="margin-left:240px; padding-top:60px; min-height:100vh;">
+  <div style="max-width:1100px; margin:0 auto; padding:28px 28px 48px;">
+
+    <!-- ── SECTION: DASHBOARD ── -->
+    <section id="sec-dashboard" class="section-pane">
+      <!-- Heading -->
+      <div class="fade-in d1 flex items-center justify-between mb-6">
+        <div>
+          <h1 style="font-size:22px; font-weight:800; color:#F9FAFB; letter-spacing:-0.03em;">Good morning, Alex 👋</h1>
+          <p style="color:#6B7280; font-size:13.5px; margin-top:2px;">Here's your career progress at a glance.</p>
+        </div>
+        <button class="btn-primary" onclick="showSection('analyzer')">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>
+          New Analysis
+        </button>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="grid gap-4 mb-6 fade-in d2" style="grid-template-columns: repeat(auto-fill, minmax(280px,1fr));">
+        <!-- ATS Score -->
+        <div class="card p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">ATS Score</div>
+              <div class="stat-num" style="color:#A78BFA;">87<span style="font-size:18px; color:#6B7280;">/100</span></div>
+            </div>
+            <div class="p-2.5 rounded-xl" style="background:rgba(124,58,237,0.12);">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke="#A78BFA" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div class="progress-track" style="height:6px; margin-bottom:8px;">
+            <div class="progress-fill" style="width:87%; height:6px;"></div>
+          </div>
+          <div style="font-size:12px; color:#6B7280;">↑ <span style="color:#34D399;">+12 pts</span> from last week</div>
+        </div>
+
+        <!-- Resumes Optimized -->
+        <div class="card p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Resumes Optimized</div>
+              <div class="stat-num" style="color:#F9FAFB;">24</div>
+            </div>
+            <div class="p-2.5 rounded-xl" style="background:rgba(16,185,129,0.1);">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="#34D399" stroke-width="1.75" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+          <div class="progress-track" style="height:6px; margin-bottom:8px;">
+            <div class="progress-fill green" style="width:80%; height:6px;"></div>
+          </div>
+          <div style="font-size:12px; color:#6B7280;"><span style="color:#34D399;">8 this month</span> · 16 last month</div>
+        </div>
+
+        <!-- Jobs Applied -->
+        <div class="card p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Jobs Applied</div>
+              <div class="stat-num" style="color:#F9FAFB;">47</div>
+            </div>
+            <div class="p-2.5 rounded-xl" style="background:rgba(59,130,246,0.1);">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="#93C5FD" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div class="progress-track" style="height:6px; margin-bottom:8px;">
+            <div class="progress-fill" style="width:62%; height:6px; background:linear-gradient(90deg,#3B82F6,#93C5FD);"></div>
+          </div>
+          <div style="font-size:12px; color:#6B7280;"><span style="color:#93C5FD;">5 interviews</span> · 21% response rate</div>
+        </div>
+      </div>
+
+      <!-- BEFORE VS AFTER -->
+      <div class="fade-in d3 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="section-heading">Before vs After Optimization</h2>
+          <span class="tag">Latest Resume</span>
+        </div>
+        <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(300px,1fr));">
+          <!-- Before -->
+          <div class="card p-5" style="border-color: rgba(239,68,68,0.2);">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-2 h-2 rounded-full" style="background:#EF4444;"></div>
+              <span style="font-size:12px; font-weight:600; color:#F87171; text-transform:uppercase; letter-spacing:0.06em;">Before Optimization</span>
+            </div>
+            <div class="flex items-end gap-2 mb-4">
+              <span style="font-size:44px; font-weight:800; color:#F87171; line-height:1; letter-spacing:-0.04em;">45</span>
+              <span style="font-size:18px; color:#6B7280; margin-bottom:4px;">/ 100</span>
+            </div>
+            <div class="progress-track" style="height:8px; margin-bottom:12px;">
+              <div class="progress-fill red" style="width:45%; height:8px;"></div>
+            </div>
+            <div class="space-y-2" style="font-size:12.5px; color:#9CA3AF;">
+              <div class="flex gap-2 items-center"><svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round"/></svg> Missing 18 key terms</div>
+              <div class="flex gap-2 items-center"><svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round"/></svg> Weak action verbs</div>
+              <div class="flex gap-2 items-center"><svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round"/></svg> No quantified impact</div>
+            </div>
+          </div>
+          <!-- After -->
+          <div class="card p-5" style="border-color: rgba(16,185,129,0.2); background: linear-gradient(160deg, rgba(16,185,129,0.04) 0%, var(--card) 60%);">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-2 h-2 rounded-full" style="background:#10B981;"></div>
+              <span style="font-size:12px; font-weight:600; color:#34D399; text-transform:uppercase; letter-spacing:0.06em;">After Optimization</span>
+            </div>
+            <div class="flex items-end gap-2 mb-4">
+              <span style="font-size:44px; font-weight:800; color:#34D399; line-height:1; letter-spacing:-0.04em;">89</span>
+              <span style="font-size:18px; color:#6B7280; margin-bottom:4px;">/ 100</span>
+              <span class="tag green ml-1 mb-1" style="font-size:11px;">+44 pts</span>
+            </div>
+            <div class="progress-track" style="height:8px; margin-bottom:12px;">
+              <div class="progress-fill green" style="width:89%; height:8px;"></div>
+            </div>
+            <div class="space-y-2" style="font-size:12.5px; color:#9CA3AF;">
+              <div class="flex gap-2 items-center"><svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> All keywords injected</div>
+              <div class="flex gap-2 items-center"><svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> 12 bullets rewritten</div>
+              <div class="flex gap-2 items-center"><svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> 8 metrics added</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent activity -->
+      <div class="card fade-in d4">
+        <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--border);">
+          <h2 class="section-heading" style="font-size:15px;">Recent Activity</h2>
+          <button class="btn-secondary" style="font-size:12px; padding:6px 12px;">View all</button>
+        </div>
+        <div style="padding:4px 0;">
+          <div class="flex items-center gap-4 px-5 py-3 transition-colors" style="cursor:pointer;" onmouseenter="this.style.background='rgba(124,58,237,0.04)'" onmouseleave="this.style.background=''">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold" style="background:rgba(124,58,237,0.15);color:#A78BFA;flex-shrink:0;">SWE</div>
+            <div class="flex-1 min-w-0"><div style="font-size:13.5px;font-weight:500;color:#F3F4F6;">Senior Software Engineer — Google</div><div style="font-size:12px;color:#6B7280;">Optimized 2 hours ago</div></div>
+            <span class="tag green">94/100</span>
+          </div>
+          <div class="flex items-center gap-4 px-5 py-3 transition-colors" style="cursor:pointer;" onmouseenter="this.style.background='rgba(124,58,237,0.04)'" onmouseleave="this.style.background=''">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold" style="background:rgba(245,158,11,0.12);color:#FCD34D;flex-shrink:0;">PM</div>
+            <div class="flex-1 min-w-0"><div style="font-size:13.5px;font-weight:500;color:#F3F4F6;">Product Manager — Stripe</div><div style="font-size:12px;color:#6B7280;">Optimized yesterday</div></div>
+            <span class="tag amber">76/100</span>
+          </div>
+          <div class="flex items-center gap-4 px-5 py-3 transition-colors" style="cursor:pointer;" onmouseenter="this.style.background='rgba(124,58,237,0.04)'" onmouseleave="this.style.background=''">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold" style="background:rgba(16,185,129,0.1);color:#34D399;flex-shrink:0;">DS</div>
+            <div class="flex-1 min-w-0"><div style="font-size:13.5px;font-weight:500;color:#F3F4F6;">Data Scientist — OpenAI</div><div style="font-size:12px;color:#6B7280;">Optimized 3 days ago</div></div>
+            <span class="tag green">91/100</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION: ANALYZER ── -->
+    <section id="sec-analyzer" class="section-pane" style="display:none;">
+      <div class="fade-in d1 mb-6">
+        <h1 style="font-size:22px; font-weight:800; color:#F9FAFB; letter-spacing:-0.03em;">Resume Analyzer</h1>
+        <p style="color:#6B7280; font-size:13.5px; margin-top:2px;">Paste your resume and job description to get an instant ATS score.</p>
+      </div>
+
+      <div class="grid gap-5 fade-in d2" style="grid-template-columns: repeat(auto-fill, minmax(340px,1fr));">
+        <div class="card p-5">
+          <label style="font-size:12px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:10px;">Your Resume</label>
+          <textarea class="field" id="resumeText" rows="10" placeholder="Paste your resume content here...
+
+Include your work experience, skills, education, and other relevant sections."></textarea>
+        </div>
+        <div class="card p-5">
+          <label style="font-size:12px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:10px;">Job Description</label>
+          <textarea class="field" id="jobDesc" rows="10" placeholder="Paste the job description here...
+
+Include responsibilities, required skills, and qualifications."></textarea>
+        </div>
+      </div>
+
+      <div class="fade-in d3 flex justify-center mt-5 mb-8">
+        <button class="btn-primary" id="analyzeBtn" onclick="runAnalysis()" style="padding:11px 28px; font-size:14px;">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="btn-label">Analyze Resume</span>
+          <span class="spinner"></span>
+        </button>
+      </div>
+
+      <!-- Result Card (hidden initially) -->
+      <div id="analyzerResult" class="card fade-in d4" style="display:none; padding:24px;">
+        <div class="flex items-center gap-3 mb-6" style="border-bottom:1px solid var(--border); padding-bottom:20px;">
+          <div style="font-size:17px; font-weight:700; color:#F9FAFB;">Analysis Results</div>
+          <span class="tag green">Completed</span>
+        </div>
+        <div class="grid gap-6" style="grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); margin-bottom:24px;">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">ATS Score</div>
+            <div style="font-size:52px;font-weight:800;color:#A78BFA;line-height:1;letter-spacing:-0.04em;">87<span style="font-size:22px;color:#6B7280;">/100</span></div>
+            <div class="progress-track mt-3" style="height:6px;"><div class="progress-fill" style="width:87%;height:6px;"></div></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Keyword Match</div>
+            <div style="font-size:52px;font-weight:800;color:#34D399;line-height:1;letter-spacing:-0.04em;">73<span style="font-size:22px;color:#6B7280;">%</span></div>
+            <div class="progress-track mt-3" style="height:6px;"><div class="progress-fill green" style="width:73%;height:6px;"></div></div>
+          </div>
+        </div>
+        <div class="mb-6">
+          <div style="font-size:12px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Missing Keywords</div>
+          <div class="flex flex-wrap gap-2" id="keywordTags">
+            <span class="tag red">TypeScript</span>
+            <span class="tag red">CI/CD</span>
+            <span class="tag red">Kubernetes</span>
+            <span class="tag red">GraphQL</span>
+            <span class="tag red">AWS Lambda</span>
+            <span class="tag red">Microservices</span>
+            <span class="tag amber">System Design</span>
+            <span class="tag amber">Redis</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Suggestions</div>
+          <div class="space-y-2.5">
+            <div class="suggestion-item"><span style="color:#A78BFA;margin-top:1px;flex-shrink:0;">→</span><span>Add TypeScript to your skills section — it appears 7 times in the job description.</span></div>
+            <div class="suggestion-item"><span style="color:#A78BFA;margin-top:1px;flex-shrink:0;">→</span><span>Quantify your impact: replace "improved performance" with specific metrics like "reduced load time by 40%".</span></div>
+            <div class="suggestion-item"><span style="color:#A78BFA;margin-top:1px;flex-shrink:0;">→</span><span>Add a brief summary section at the top tailored to this specific role.</span></div>
+            <div class="suggestion-item"><span style="color:#A78BFA;margin-top:1px;flex-shrink:0;">→</span><span>Mention CI/CD experience (GitHub Actions, Jenkins) — it's a hard requirement.</span></div>
+            <div class="suggestion-item"><span style="color:#A78BFA;margin-top:1px;flex-shrink:0;">→</span><span>Move your most relevant experience to the top — ATS tools weight the first 200 words heavily.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION: AI APPLY ── -->
+    <section id="sec-apply" class="section-pane" style="display:none;">
+      <div class="fade-in d1 mb-6">
+        <h1 style="font-size:22px; font-weight:800; color:#F9FAFB; letter-spacing:-0.03em;">AI Apply Assistant</h1>
+        <p style="color:#6B7280; font-size:13.5px; margin-top:2px;">Enter a job role to get AI-powered job suggestions and required skills.</p>
+      </div>
+      <div class="card p-5 fade-in d2 mb-5">
+        <label style="font-size:12px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:10px;">Target Job Role</label>
+        <div class="flex gap-3">
+          <input type="text" id="jobRoleInput" class="field" style="resize:none; height:44px;" placeholder="e.g. Senior Frontend Engineer, Product Manager, Data Scientist..."/>
+          <button class="btn-primary" id="genBtn" onclick="generateJobs()" style="white-space:nowrap;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="btn-label">Generate</span>
+            <span class="spinner"></span>
+          </button>
+        </div>
+      </div>
+      <div id="jobSuggestions" class="space-y-3 fade-in d3">
+        <div class="card p-5 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0" style="background:rgba(59,130,246,0.15);color:#93C5FD;">G</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap mb-2">
+              <span style="font-size:14.5px;font-weight:600;color:#F3F4F6;">Senior Software Engineer</span>
+              <span class="tag blue">Google</span>
+              <span class="tag green">95% match</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 mb-2">
+              <span class="tag" style="font-size:11px;">Python</span><span class="tag" style="font-size:11px;">Go</span><span class="tag" style="font-size:11px;">Kubernetes</span><span class="tag" style="font-size:11px;">Distributed Systems</span>
+            </div>
+            <div style="font-size:12.5px;color:#9CA3AF;">Remote · $180k–$240k · Full-time</div>
+          </div>
+          <button class="btn-secondary" style="font-size:12px;padding:6px 14px;white-space:nowrap;">Apply Now</button>
+        </div>
+        <div class="card p-5 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0" style="background:rgba(124,58,237,0.15);color:#A78BFA;">M</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap mb-2">
+              <span style="font-size:14.5px;font-weight:600;color:#F3F4F6;">Staff Engineer, Infrastructure</span>
+              <span class="tag">Meta</span>
+              <span class="tag green">88% match</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 mb-2">
+              <span class="tag" style="font-size:11px;">React</span><span class="tag" style="font-size:11px;">TypeScript</span><span class="tag" style="font-size:11px;">GraphQL</span><span class="tag" style="font-size:11px;">System Design</span>
+            </div>
+            <div style="font-size:12.5px;color:#9CA3AF;">Hybrid · $200k–$280k · Full-time</div>
+          </div>
+          <button class="btn-secondary" style="font-size:12px;padding:6px 14px;white-space:nowrap;">Apply Now</button>
+        </div>
+        <div class="card p-5 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0" style="background:rgba(16,185,129,0.1);color:#34D399;">S</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap mb-2">
+              <span style="font-size:14.5px;font-weight:600;color:#F3F4F6;">Backend Engineer, Payments</span>
+              <span class="tag green">Stripe</span>
+              <span class="tag amber">81% match</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 mb-2">
+              <span class="tag" style="font-size:11px;">Node.js</span><span class="tag" style="font-size:11px;">PostgreSQL</span><span class="tag" style="font-size:11px;">AWS</span><span class="tag" style="font-size:11px;">REST APIs</span>
+            </div>
+            <div style="font-size:12.5px;color:#9CA3AF;">Remote · $150k–$200k · Full-time</div>
+          </div>
+          <button class="btn-secondary" style="font-size:12px;padding:6px 14px;white-space:nowrap;">Apply Now</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION: JOB TRACKER ── -->
+    <section id="sec-tracker" class="section-pane" style="display:none;">
+      <div class="fade-in d1 flex items-center justify-between mb-6">
+        <div>
+          <h1 style="font-size:22px; font-weight:800; color:#F9FAFB; letter-spacing:-0.03em;">Job Tracker</h1>
+          <p style="color:#6B7280; font-size:13.5px; margin-top:2px;">Track every application and stay organized.</p>
+        </div>
+        <button class="btn-primary" onclick="addJobRow()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>
+          Add Job
+        </button>
+      </div>
+
+      <!-- Stats row -->
+      <div class="grid gap-3 mb-5 fade-in d2" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));">
+        <div class="card p-4 text-center">
+          <div style="font-size:28px;font-weight:800;color:#A78BFA;letter-spacing:-0.03em;">14</div>
+          <div style="font-size:11.5px;color:#6B7280;margin-top:2px;">Total Applied</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div style="font-size:28px;font-weight:800;color:#34D399;letter-spacing:-0.03em;">5</div>
+          <div style="font-size:11.5px;color:#6B7280;margin-top:2px;">Interviewing</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div style="font-size:28px;font-weight:800;color:#FCD34D;letter-spacing:-0.03em;">3</div>
+          <div style="font-size:11.5px;color:#6B7280;margin-top:2px;">Pending</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div style="font-size:28px;font-weight:800;color:#F87171;letter-spacing:-0.03em;">6</div>
+          <div style="font-size:11.5px;color:#6B7280;margin-top:2px;">Rejected</div>
+        </div>
+      </div>
+
+      <div class="card fade-in d3 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="data-table w-full">
+            <thead>
+              <tr style="text-align:left;">
+                <th>Company</th>
+                <th>Role</th>
+                <th>Applied</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="jobTableBody">
+              <tr>
+                <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background:rgba(59,130,246,0.15);color:#93C5FD;">G</div>Google</div></td>
+                <td style="color:#D1D5DB;">Senior SWE</td>
+                <td style="color:#6B7280;">Apr 12</td>
+                <td><span class="tag green">Interview</span></td>
+                <td><button class="btn-secondary" style="padding:4px 10px;font-size:11.5px;">Edit</button></td>
+              </tr>
+              <tr>
+                <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background:rgba(124,58,237,0.15);color:#A78BFA;">M</div>Meta</div></td>
+                <td style="color:#D1D5DB;">Staff Engineer</td>
+                <td style="color:#6B7280;">Apr 8</td>
+                <td><span class="tag">Applied</span></td>
+                <td><button class="btn-secondary" style="padding:4px 10px;font-size:11.5px;">Edit</button></td>
+              </tr>
+              <tr>
+                <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background:rgba(16,185,129,0.1);color:#34D399;">S</div>Stripe</div></td>
+                <td style="color:#D1D5DB;">Backend Engineer</td>
+                <td style="color:#6B7280;">Apr 5</td>
+                <td><span class="tag green">Interview</span></td>
+                <td><button class="btn-secondary" style="padding:4px 10px;font-size:11.5px;">Edit</button></td>
+              </tr>
+              <tr>
+                <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background:rgba(239,68,68,0.1);color:#F87171;">U</div>Uber</div></td>
+                <td style="color:#D1D5DB;">Platform Engineer</td>
+                <td style="color:#6B7280;">Mar 28</td>
+                <td><span class="tag red">Rejected</span></td>
+                <td><button class="btn-secondary" style="padding:4px 10px;font-size:11.5px;">Edit</button></td>
+              </tr>
+              <tr>
+                <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background:rgba(245,158,11,0.1);color:#FCD34D;">N</div>Netflix</div></td>
+                <td style="color:#D1D5DB;">Senior SWE</td>
+                <td style="color:#6B7280;">Mar 20</td>
+                <td><span class="tag amber">Pending</span></td>
+                <td><button class="btn-secondary" style="padding:4px 10px;font-size:11.5px;">Edit</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION: SKILLS ── -->
+    <section id="sec-skills" class="section-pane" style="display:none;">
+      <div class="fade-in d1 mb-6">
+        <h1 style="font-size:22px; font-weight:800; color:#F9FAFB; letter-spacing:-0.03em;">Skill Upgrade Roadmap</h1>
+        <p style="color:#6B7280; font-size:13.5px; margin-top:2px;">Your personalized 8-week learning plan for Senior Software Engineer roles.</p>
+      </div>
+
+      <div class="grid gap-5 fade-in d2" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr));">
+        <!-- Weeks 1–4 -->
+        <div class="card p-5">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="px-3 py-1 rounded-full text-xs font-semibold" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);color:white;">Phase 1</div>
+            <span style="font-size:14px;font-weight:700;color:#F3F4F6;">Weeks 1 – 4</span>
+            <span class="tag green ml-auto">In Progress</span>
+          </div>
+          <div class="relative" style="padding-left:36px;">
+            <div class="timeline-line"></div>
+            <div class="space-y-5">
+              <div class="flex gap-3 items-start relative">
+                <div class="timeline-dot absolute" style="left:-28px; top:5px;"></div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:#F3F4F6;">TypeScript Fundamentals</div>
+                  <div style="font-size:12px;color:#6B7280;margin:3px 0 8px;">Types, generics, decorators</div>
+                  <div class="progress-track" style="height:5px;max-width:200px;"><div class="progress-fill" style="width:70%;height:5px;"></div></div>
+                  <div style="font-size:11px;color:#6B7280;margin-top:4px;">70% complete</div>
+                </div>
+              </div>
+              <div class="flex gap-3 items-start relative">
+                <div class="timeline-dot absolute" style="left:-28px; top:5px;"></div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:#F3F4F6;">System Design Basics</div>
+                  <div style="font-size:12px;color:#6B7280;margin:3px 0 8px;">Scalability, load balancers, CAP</div>
+                  <div class="progress-track" style="height:5px;max-width:200px;"><div class="progress-fill" style="width:40%;height:5px;"></div></div>
+                  <div style="font-size:11px;color:#6B7280;margin-top:4px;">40% complete</div>
+                </div>
+              </div>
+              <div class="flex gap-3 items-start relative">
+                <div class="timeline-dot absolute" style="left:-28px; top:5px; opacity:0.4;"></div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:#9CA3AF;">Docker & Containers</div>
+                  <div style="font-size:12px;color:#6B7280;margin:3px 0 8px;">Dockerfile, compose, registries</div>
+                  <div class="progress-track" style="height:5px;max-width:200px;"><div class="progress-fill" style="width:0%;height:5px;"></div></div>
+                  <div style="font-size:11px;color:#6B7280;margin-top:4px;">Not started</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weeks 5–8 -->
+        <div class="card p-5">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="px-3 py-1 rounded-full text-xs font-semibold" style="background:rgba(124,58,237,0.15);color:#A78BFA;border:1px solid rgba(124,58,237,0.25);">Phase 2</div>
+            <span style="font-size:14px;font-weight:700;color:#F3F4F6;">Weeks 5 – 8</span>
+            <span class="tag ml-auto" style="font-size:11px;">Upcoming</span>
+          </div>
+          <div class="relative" style="padding-left:36px;">
+            <div class="timeline-line" style="opacity:0.3;"></div>
+            <div class="space-y-5">
+              <div class="flex gap-3 items-start relative">
+                <div class="timeline-dot absolute" style="left:-28px; top:5px; opacity:0.4;"></div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:#9CA3AF;">Kubernetes & Orchestration</div>
+                  <div style="font-size:12px;color:#6B7280;margin:3px 0 8px;">Pods, services, deployments</div>
+                  <div class="flex flex-wrap gap-1 mt-1"><span class="tag" style="font-size:10.5px;">K8s</span><span class="tag" style="font-size:10.5px;">Helm</span></div>
+                </div>
+              </div>
+              <div class="flex gap-3 items-start relative">
+                <div class="timeline-dot absolute" style="left:-28px; top:5px; opacity:0.4;"></div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:#9CA3AF;">AWS Cloud Essentials</div>
+                  <div style="font-size:12px;color:#6B7280;margin:3px 0 8px;">EC2, S3, Lambda, RDS</div>
+                  <div class="flex flex-wrap gap-1 mt-1"><span class="tag" style="font-size:10.5px;">AWS</span><span class="tag" style="font-size:10.5px;">Serverless</span></div>
+                </div>
+              </div>
+              <div class="flex gap-3 items-start relative">
+                <div class="timeline-dot absolute" style="left:-28px; top:5px; opacity:0.4;"></div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:#9CA3AF;">CI/CD Pipelines</div>
+                  <div style="font-size:12px;color:#6B7280;margin:3px 0 8px;">GitHub Actions, Jenkins, ArgoCD</div>
+                  <div class="flex flex-wrap gap-1 mt-1"><span class="tag" style="font-size:10.5px;">DevOps</span><span class="tag" style="font-size:10.5px;">GitOps</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skill gaps -->
+      <div class="card fade-in d3 mt-5 p-5">
+        <div style="font-size:15px;font-weight:700;color:#F3F4F6;margin-bottom:16px;">Skill Gap Analysis</div>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between mb-1.5"><span style="font-size:13px;color:#D1D5DB;">TypeScript</span><span style="font-size:12px;color:#A78BFA;">70%</span></div>
+            <div class="progress-track" style="height:7px;"><div class="progress-fill" style="width:70%;height:7px;"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1.5"><span style="font-size:13px;color:#D1D5DB;">System Design</span><span style="font-size:12px;color:#FCD34D;">40%</span></div>
+            <div class="progress-track" style="height:7px;"><div class="progress-fill amber" style="width:40%;height:7px;"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1.5"><span style="font-size:13px;color:#D1D5DB;">Kubernetes</span><span style="font-size:12px;color:#F87171;">15%</span></div>
+            <div class="progress-track" style="height:7px;"><div class="progress-fill red" style="width:15%;height:7px;"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1.5"><span style="font-size:13px;color:#D1D5DB;">AWS</span><span style="font-size:12px;color:#F87171;">25%</span></div>
+            <div class="progress-track" style="height:7px;"><div class="progress-fill red" style="width:25%;height:7px;"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1.5"><span style="font-size:13px;color:#D1D5DB;">React / Next.js</span><span style="font-size:12px;color:#34D399;">85%</span></div>
+            <div class="progress-track" style="height:7px;"><div class="progress-fill green" style="width:85%;height:7px;"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION: SETTINGS ── -->
+    <section id="sec-settings" class="section-pane" style="display:none;">
+      <div class="fade-in d1 mb-6">
+        <h1 style="font-size:22px; font-weight:800; color:#F9FAFB; letter-spacing:-0.03em;">Settings</h1>
+        <p style="color:#6B7280; font-size:13.5px; margin-top:2px;">Manage your account, preferences, and billing.</p>
+      </div>
+      <div class="grid gap-5 fade-in d2">
+        <div class="card p-5">
+          <div style="font-size:15px;font-weight:700;color:#F3F4F6;margin-bottom:16px;">Profile</div>
+          <div class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));">
+            <div><label style="font-size:12px;font-weight:500;color:#9CA3AF;display:block;margin-bottom:6px;">Full Name</label><input type="text" class="field" style="resize:none;height:42px;" value="Alex Kumar"/></div>
+            <div><label style="font-size:12px;font-weight:500;color:#9CA3AF;display:block;margin-bottom:6px;">Email</label><input type="text" class="field" style="resize:none;height:42px;" value="alex@gmail.com"/></div>
+            <div><label style="font-size:12px;font-weight:500;color:#9CA3AF;display:block;margin-bottom:6px;">Target Role</label><input type="text" class="field" style="resize:none;height:42px;" value="Senior Software Engineer"/></div>
+            <div><label style="font-size:12px;font-weight:500;color:#9CA3AF;display:block;margin-bottom:6px;">Location</label><input type="text" class="field" style="resize:none;height:42px;" value="San Francisco, CA"/></div>
+          </div>
+          <button class="btn-primary mt-4">Save Changes</button>
+        </div>
+        <div class="card p-5">
+          <div style="font-size:15px;font-weight:700;color:#F3F4F6;margin-bottom:4px;">Subscription</div>
+          <div style="font-size:13px;color:#6B7280;margin-bottom:16px;">You're on the <span style="color:#A78BFA;font-weight:600;">Pro Plan</span> — renews Jan 15, 2026</div>
+          <div class="flex flex-wrap gap-3">
+            <button class="btn-secondary">Manage Billing</button>
+            <button class="btn-secondary" style="color:#F87171;border-color:rgba(239,68,68,0.25);background:rgba(239,68,68,0.08);">Cancel Plan</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /max-width wrapper -->
+</main>
+
+<script>
+  const sections = ['dashboard','analyzer','apply','tracker','skills','settings'];
+
+  function showSection(id) {
+    sections.forEach(s => {
+      const el = document.getElementById('sec-'+s);
+      if (el) el.style.display = s === id ? '' : 'none';
+    });
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    const map = {dashboard:0,analyzer:1,apply:2,tracker:3,skills:4,settings:5};
+    document.querySelectorAll('.nav-item')[map[id]]?.classList.add('active');
+  }
+
+  function runAnalysis() {
+    const btn = document.getElementById('analyzeBtn');
+    btn.classList.add('loading');
+    setTimeout(() => {
+      btn.classList.remove('loading');
+      const result = document.getElementById('analyzerResult');
+      result.style.display = 'block';
+      result.style.opacity = '0';
+      result.style.transform = 'translateY(14px)';
+      setTimeout(() => { result.style.transition='all 0.45s ease'; result.style.opacity='1'; result.style.transform='translateY(0)'; }, 20);
+    }, 1800);
+  }
+
+  function generateJobs() {
+    const btn = document.getElementById('genBtn');
+    btn.classList.add('loading');
+    const suggestions = document.getElementById('jobSuggestions');
+    suggestions.style.opacity = '0.4';
+    setTimeout(() => {
+      btn.classList.remove('loading');
+      suggestions.style.transition = 'opacity 0.4s ease';
+      suggestions.style.opacity = '1';
+    }, 1400);
+  }
+
+  let jobCount = 5;
+  function addJobRow() {
+    jobCount++;
+    const tbody = document.getElementById('jobTableBody');
+    const row = document.createElement('tr');
+    const companies = ['Apple','Amazon','Microsoft','Airbnb','LinkedIn'];
+    const roles = ['SWE II','Frontend Engineer','ML Engineer','DevOps Lead','Full Stack Dev'];
+    const statuses = [
+      '<span class="tag">Applied</span>',
+      '<span class="tag green">Interview</span>',
+      '<span class="tag amber">Pending</span>'
+    ];
+    const company = companies[Math.floor(Math.random()*companies.length)];
+    const role = roles[Math.floor(Math.random()*roles.length)];
+    const status = statuses[Math.floor(Math.random()*statuses.length)];
+    row.innerHTML = `
+      <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background:rgba(124,58,237,0.15);color:#A78BFA;">${company[0]}</div>${company}</div></td>
+      <td style="color:#D1D5DB;">${role}</td>
+      <td style="color:#6B7280;">Apr ${jobCount+10}</td>
+      <td>${status}</td>
+      <td><button class="btn-secondary" style="padding:4px 10px;font-size:11.5px;">Edit</button></td>
+    `;
+    row.style.opacity = '0'; row.style.transform = 'translateY(-8px)';
+    tbody.insertBefore(row, tbody.firstChild);
+    setTimeout(() => { row.style.transition='all 0.3s ease'; row.style.opacity='1'; row.style.transform='translateY(0)'; }, 20);
+  }
+</script>
+</body>
+</html>
