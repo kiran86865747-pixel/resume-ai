@@ -1240,6 +1240,22 @@ function addJob() {
     row.style.transition = 'all .3s cubic-bezier(.4,0,.2,1)';
     row.style.opacity = '1'; row.style.transform = 'translateY(0)';
   }, 20);
+  <div class="p-6 bg-gray-900 rounded-2xl">
+  <h2 class="text-xl font-semibold mb-4">Resume Analyzer</h2>
+
+  <textarea id="resume" placeholder="Paste your resume here..."
+    class="w-full p-3 mb-4 rounded-lg bg-gray-800 text-white"></textarea>
+
+  <textarea id="job" placeholder="Paste job description..."
+    class="w-full p-3 mb-4 rounded-lg bg-gray-800 text-white"></textarea>
+
+  <button onclick="analyzeResume()"
+    class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg">
+    Analyze Resume
+  </button>
+
+  <div id="result" class="mt-4 text-sm text-gray-300"></div>
+</div>
 }
 </script>
 </body>
@@ -1249,6 +1265,8 @@ function addJob() {
 async function analyzeResume() {
   const resume = document.getElementById("resume").value;
   const jobDescription = document.getElementById("job").value;
+  
+  console.log("Clicked"); // DEBUG
 
   const response = await fetch("/api/analyze", {
     method: "POST",
@@ -1262,6 +1280,36 @@ async function analyzeResume() {
 
   document.getElementById("result").innerText = data.result;
   <button onclick="analyzeResume()">Analyze Resume</button>
+}
+</script>
+
+<script>
+async function analyzeResume() {
+  const resume = document.getElementById("resume").value;
+  const jobDescription = document.getElementById("job").value;
+
+  if (!resume || !jobDescription) {
+    alert("Please fill both fields");
+    return;
+  }
+
+  document.getElementById("result").innerText = "Analyzing...";
+
+  try {
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ resume, jobDescription }),
+    });
+
+    const data = await response.json();
+
+    document.getElementById("result").innerText = data.result;
+  } catch (error) {
+    document.getElementById("result").innerText = "Error occurred";
+  }
 }
 </script>
 
